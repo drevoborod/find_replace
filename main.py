@@ -1,32 +1,83 @@
 #!/usr/bin/env python3
 
-POSTFIX = "_result"
-DELIMITER = "  #################  "
-ENCODING = 'utf-8'
+import sys
+import argparse
+import configparser
+
+
+DEFAULTS = {
+    "config_file": "config.cfg",
+    "file_postfix": "_result",
+    "delimiter": "  #################  ",
+    "encoding": "utf-8",
+    "number": 0,
+    "find": "\n",
+    "replace": ", "
+}
+
+REQUIRED = ["input", "find", "replace"]
 
 
 class FileError(Exception): pass
 class ParseError(Exception): pass
 
 
-class Writeout:
-    def __init__(self, filename):
-        splitted = filename.rsplit(".", maxsplit=1)
-        if len(splitted) > 1:
-            new_file = splitted[0] + POSTFIX + '.' + splitted[1]
-        else:
-            new_file = splitted[0] + POSTFIX
-        self.file = open(new_file, 'w', encoding=ENCODING)
+class Config:
+    def __init__(self, config_file):
+        if sys.version_info < (3, 5):
+            print("\nNeed python interpreter version not less than 3.5.\n"
+                  "Your version is {}".format('.'.join(map(str, sys.version_info[:3]))))
+            sys.exit(1)
+        self.config_file = config_file
 
-    def write(self, data, delim=None):
-        self.file.write(data + delim if delim else DELIMITER)
+    def create_config(self):
+        pass
+
+    def parse_cmdline(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-c", "--cli", help="Use command line version.", action="store_true")
+        parser.add_argument("-i", "--input", help="File to parse.")
+        parser.add_argument("-o", "--output", help="Output file.")
+        parser.add_argument("-f", "--find", help="Expression to replace.")
+        parser.add_argument("-r", "--replace", help="Replacement expression.")
+        parser.add_argument("-n", "--number", help="Number of items in one group. Groups are separated by delimiter.")
+        parser.add_argument("-d", "--delimiter", help="Word which will be used as delimiter of groups.")
+        parser.add_argument("-e", "--encoding", help="Encoding of input and output file.")
+        parser.add_argument("-p", "--postfix", help="Optional output file postfix (can be used instead of providing full file name. "
+                                                    "In such case, output file name will be input_file_name + postfix).")
+        return parser.parse_args()
+
+    def parse_configfile(self):
+        config = configparser.ConfigParser()
+        try:
+            config.read(self.config_file)
+        except IOError:
+            return False
+        else:
+
+
+
+class Writeout:
+    def __init__(self, filename, postfix, delimiter, encoding):
+        if postfix:
+            splitted = filename.rsplit(".", maxsplit=1)
+            if len(splitted) > 1:
+                new_file = splitted[0] + postfix + '.' + splitted[1]
+            else:
+                new_file = splitted[0] + postfix
+        else:
+            new_file = filename
+        self.file = open(new_file, 'w', encoding=encoding)
+
+    def write(self, data, delimiter):
+        self.file.write(data + delimiter)
 
     def close(self):
         self.file.close()
 
 
-def parse_input(infile, search_pattern, replace_pattern, interval=0):
-    data = open(infile, encoding=ENCODING)
+def parse_input(infile, search_pattern, replace_pattern, interval, encoding):
+    data = open(infile, encoding=encoding)
     to_write = Writeout(infile)
     result = []
     for string in data:
