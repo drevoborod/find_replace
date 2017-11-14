@@ -18,16 +18,13 @@ DEFAULTS = {
 REQUIRED = ["input", "find", "replace"]
 
 
-class FileError(Exception): pass
-class ParseError(Exception): pass
-
-
 class Config:
     def __init__(self):
         if sys.version_info < (3, 5):
-            print("\nNeed python interpreter version not less than 3.5.\n"
-                  "Your version is {}.".format('.'.join(map(str, sys.version_info[:3]))))
-            sys.exit(1)
+            message = "\nNeed python interpreter version not less than 3.5.\n"\
+                        "Your version is {}.".format('.'.join(map(str, sys.version_info[:3])))
+            print(message)
+            sys.exit(message)
         self.parameters = {}
 
     def create_config(self):

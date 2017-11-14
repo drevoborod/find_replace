@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 import tkinter as tk
+import main
 
 
 class MainGui(tk.Tk):
     def __init__(self, params, **kwargs):
         super().__init__(**kwargs)
-        self.params = params
 
 
 

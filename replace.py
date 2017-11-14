@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 
 import sys
-
-
-import cli_replace
-import gui_replace
 import main
+
 
 try:
     import tkinter
@@ -15,15 +12,20 @@ else:
     can_run_gui = True
 
 
-
-
-
-
 if __name__ == "__main":
+    params = main.Config()
     if len(sys.argv) > 1:
-        params = main.Config()
+        import cli_replace
+        params.create_config()
         cli_replace.Commandline(params.parameters)
-
+    else:
+        if can_run_gui:
+            import gui_replace
+            gui_replace.MainGui(params.parse_configfile())
+        else:
+            message = "Unable to start GUI"
+            print(message)
+            sys.exit(message)
 
 
 
