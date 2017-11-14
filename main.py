@@ -6,8 +6,8 @@ import configparser
 
 
 DEFAULTS = {
-    "config_file": "config.cfg",
-    "file_postfix": "_result",
+    "config": "config.cfg",
+    "postfix": "_result",
     "delimiter": "  #################  ",
     "encoding": "utf-8",
     "number": 0,
@@ -23,19 +23,24 @@ class ParseError(Exception): pass
 
 
 class Config:
-    def __init__(self, config_file):
+    def __init__(self):
         if sys.version_info < (3, 5):
             print("\nNeed python interpreter version not less than 3.5.\n"
-                  "Your version is {}".format('.'.join(map(str, sys.version_info[:3]))))
+                  "Your version is {}.".format('.'.join(map(str, sys.version_info[:3]))))
             sys.exit(1)
-        self.config_file = config_file
+        self.parameters = {}
 
     def create_config(self):
-        pass
+        cmdline_opts = self.parse_cmdline()
+        try:
+            self.config_file = cmdline_opts['config']
+        except KeyError:
+            self.parameters['config'] = DEFAULTS['config']
+
 
     def parse_cmdline(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument("-c", "--cli", help="Use command line version.", action="store_true")
+        parser.add_argument("-c", "--config", help="Configuration file name.")
         parser.add_argument("-i", "--input", help="File to parse.")
         parser.add_argument("-o", "--output", help="Output file.")
         parser.add_argument("-f", "--find", help="Expression to replace.")
@@ -50,11 +55,11 @@ class Config:
     def parse_configfile(self):
         config = configparser.ConfigParser()
         try:
-            config.read(self.config_file)
+            config.read(self.parameters['config'])
         except IOError:
             return False
         else:
-
+            return dict(config.items())
 
 
 class Writeout:

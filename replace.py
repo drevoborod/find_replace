@@ -18,7 +18,12 @@ else:
 
 
 
+
 if __name__ == "__main":
+    if len(sys.argv) > 1:
+        params = main.Config()
+        cli_replace.Commandline(params.parameters)
+
 
 
 

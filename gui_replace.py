@@ -3,9 +3,10 @@
 import tkinter as tk
 
 
-class MainGui(tk.Toplevel):
-    def __init__(self, **kwargs):
+class MainGui(tk.Tk):
+    def __init__(self, params, **kwargs):
         super().__init__(**kwargs)
+        self.params = params
 
 
 
