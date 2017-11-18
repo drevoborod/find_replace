@@ -25,17 +25,20 @@ class Config:
                         "Your version is {}.".format('.'.join(map(str, sys.version_info[:3])))
             print(message)
             sys.exit(message)
-        self.parameters = {}
+        self.parameters = DEFAULTS.copy()
 
     def create_config(self):
+        """Create configuration dictionary using parameters from defaults, command line and config file."""
+        file_opts = self.parse_configfile()
+        if file_opts:
+            for key in file_opts:
+                self.parameters[key] = key
         cmdline_opts = self.parse_cmdline()
-        try:
-            self.config_file = cmdline_opts['config']
-        except KeyError:
-            self.parameters['config'] = DEFAULTS['config']
-
+        for key in cmdline_opts:
+            self.parameters[key] = key
 
     def parse_cmdline(self):
+        """Parse commandline and return arguments dict."""
         parser = argparse.ArgumentParser()
         parser.add_argument("-c", "--config", help="Configuration file name.")
         parser.add_argument("-i", "--input", help="File to parse.")
@@ -50,10 +53,11 @@ class Config:
         return parser.parse_args()
 
     def parse_configfile(self):
+        """Parse configuration file. Returns False if file cannot be read, else returns its contents."""
         config = configparser.ConfigParser()
         try:
             config.read(self.parameters['config'])
-        except IOError:
+        except (IOError, FileNotFoundError):
             return False
         else:
             return dict(config.items())
@@ -70,17 +74,18 @@ class Writeout:
         else:
             new_file = filename
         self.file = open(new_file, 'w', encoding=encoding)
+        self.delimiter = delimiter
 
-    def write(self, data, delimiter):
-        self.file.write(data + delimiter)
+    def write(self, data):
+        self.file.write(data + self.delimiter)
 
     def close(self):
         self.file.close()
 
 
-def parse_input(infile, search_pattern, replace_pattern, interval, encoding):
+def parse_input(infile, search_pattern, replace_pattern, interval, delimiter, postfix, encoding):
     data = open(infile, encoding=encoding)
-    to_write = Writeout(infile)
+    to_write = Writeout(infile, postfix, delimiter, encoding)
     result = []
     for string in data:
         res = string.rstrip().split(search_pattern)
