@@ -15,17 +15,22 @@ else:
 if __name__ == "__main":
     params = main.Config()
     if len(sys.argv) > 1:
-        import cli_replace
         params.create_config()
-        cli_replace.Commandline(params.parameters)
+        for p in main.REQUIRED:
+            if p not in params.parameters:
+                main.exit_error("Required parameter is missing: '{}'.".format(p))
+        engine = main.Engine(params.parameters)
+        engine.create_outfile()
+        engine.parse()
+        engine.close()
     else:
         if can_run_gui:
             import gui_replace
-            gui_replace.MainGui(params.parse_configfile())
+            params.create_config()
+            engine = main.Engine(params.parameters)
+            gui_replace.MainGui(engine)
         else:
-            message = "Unable to start GUI"
-            print(message)
-            sys.exit(message)
+            main.exit_error("Unable to start GUI.")
 
 
 

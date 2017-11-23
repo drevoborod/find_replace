@@ -10,9 +10,7 @@ DEFAULTS = {
     "postfix": "_result",
     "delimiter": "  #################  ",
     "encoding": "utf-8",
-    "number": 0,
-    "find": "\n",
-    "replace": ", "
+    "number": 0
 }
 
 REQUIRED = ["input", "find", "replace"]
@@ -21,10 +19,8 @@ REQUIRED = ["input", "find", "replace"]
 class Config:
     def __init__(self):
         if sys.version_info < (3, 5):
-            message = "\nNeed python interpreter version not less than 3.5.\n"\
-                        "Your version is {}.".format('.'.join(map(str, sys.version_info[:3])))
-            print(message)
-            sys.exit(message)
+            exit_error("\nNeed python interpreter version not less than 3.5.\n"\
+                        "Your version is {}.".format('.'.join(map(str, sys.version_info[:3]))))
         self.parameters = DEFAULTS.copy()
 
     def create_config(self):
@@ -63,42 +59,51 @@ class Config:
             return dict(config.items())
 
 
-class Writeout:
-    def __init__(self, filename, postfix, delimiter, encoding):
-        if postfix:
-            splitted = filename.rsplit(".", maxsplit=1)
-            if len(splitted) > 1:
-                new_file = splitted[0] + postfix + '.' + splitted[1]
+class Engine:
+    def __init__(self, params):
+        self.params = params
+
+    def create_outfile(self, filename=None):
+        """Create file where to write to. Need to be executed firstly!"""
+        if not filename:
+            if "output" not in self.params:
+                splitted = self.params['input'].rsplit(".", maxsplit=1)
+                if len(splitted) > 1:
+                    filename = splitted[0] + self.params['postfix'] + '.' + splitted[1]
+                else:
+                    filename = splitted[0] + self.params['postfix']
             else:
-                new_file = splitted[0] + postfix
-        else:
-            new_file = filename
-        self.file = open(new_file, 'w', encoding=encoding)
-        self.delimiter = delimiter
+                filename = self.params['output']
+        try:
+            self.outfile = open(filename, 'w', encoding=self.params['encoding'])
+        except IOError:
+            exit_error("Unable to create output file.")
 
     def write(self, data):
-        self.file.write(data + self.delimiter)
+        self.outfile.write(data + self.delimiter)
 
     def close(self):
-        self.file.close()
+        self.outfile.close()
+
+    def parse(self, infile, search_pattern, replace_pattern):
+        data = open(infile, encoding=encoding)
+        result = []
+        for string in data:
+            res = string.rstrip().split(search_pattern)
+            result += res
+            if interval:
+                while len(result) >= interval:
+                    to_write.write(replace_pattern.join(result[:interval]))
+                    result = result[interval:]
+            else:
+                to_write.write(replace_pattern.join(result))
+        to_write.write(replace_pattern.join(result))
+        to_write.close()
 
 
-def parse_input(infile, search_pattern, replace_pattern, interval, delimiter, postfix, encoding):
-    data = open(infile, encoding=encoding)
-    to_write = Writeout(infile, postfix, delimiter, encoding)
-    result = []
-    for string in data:
-        res = string.rstrip().split(search_pattern)
-        result += res
-        if interval:
-            while len(result) >= interval:
-                to_write.write(replace_pattern.join(result[:interval]))
-                result = result[interval:]
-        else:
-            to_write.write(replace_pattern.join(result))
-    to_write.write(replace_pattern.join(result))
-    to_write.close()
-
+def exit_error(message):
+    print(message)
+    sys.exit(message)
 
 # Self-test:
 if __name__ == "__main__":
