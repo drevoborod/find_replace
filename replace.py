@@ -20,16 +20,13 @@ if __name__ == "__main__":
         for p in main.REQUIRED:
             if p not in params.parameters:
                 main.exit_error("Required parameter is missing: '{}'.".format(p))
+        try:
+            engine.parse()
+        except main.ParserError as err:
+            main.exit_error(err)
     else:
         if can_run_gui:
             import gui_replace
-            engine = main.Engine(params.parameters)
             gui_replace.MainGui(engine)
         else:
             main.exit_error("Unable to start GUI.")
-    engine.create_outfile()
-    engine.parse()
-    engine.close()
-
-
-

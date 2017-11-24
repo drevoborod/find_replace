@@ -16,6 +16,9 @@ DEFAULTS = {
 REQUIRED = ["input", "find", "replace"]
 
 
+class ParserError(Exception): pass
+
+
 class Config:
     def __init__(self):
         if sys.version_info < (3, 5):
@@ -77,7 +80,7 @@ class Engine:
         try:
             self.outfile = open(filename, 'w', encoding=self.params['encoding'])
         except IOError:
-            exit_error("Unable to create output file.")
+            raise ParserError("Unable to create output file.")
 
     def write(self, data):
         self.outfile.write(data + self.delimiter)
@@ -85,26 +88,23 @@ class Engine:
     def close(self):
         self.outfile.close()
 
-    def parse(self, infile, search_pattern, replace_pattern):
-        data = open(infile, encoding=encoding)
+    def parse(self):
+        self.create_outfile()
+        data = open(self.params["input"], encoding=self.params["encoding"])
         result = []
         for string in data:
-            res = string.rstrip().split(search_pattern)
+            res = string.rstrip().split(self.params["find"])
             result += res
-            if interval:
-                while len(result) >= interval:
-                    to_write.write(replace_pattern.join(result[:interval]))
-                    result = result[interval:]
+            if self.params["number"]:
+                while len(result) >= self.params["number"]:
+                    self.outfile.write(self.params["replace"].join(result[:self.params["number"]]))
+                    result = result[self.params["number"]:]
             else:
-                to_write.write(replace_pattern.join(result))
-        to_write.write(replace_pattern.join(result))
-        to_write.close()
+                self.outfile.write(self.params["replace"].join(result))
+        self.outfile.write(self.params["replace"].join(result))
+        self.close()
 
 
 def exit_error(message):
     print(message)
     sys.exit(message)
-
-# Self-test:
-if __name__ == "__main__":
-    parse_input("text.txt", search_pattern=",", replace_pattern="|")
