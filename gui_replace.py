@@ -2,7 +2,7 @@
 
 import tkinter as tk
 from tkinter.filedialog import asksaveasfilename
-from tkinter.filedialog import askopenfile
+from tkinter.filedialog import askopenfilename
 import main
 
 
@@ -36,7 +36,9 @@ class MainGui(tk.Tk):
         self.mainloop()
 
     def input_file(self):
-        self.infile.set(askopenfile())
+        res = askopenfilename()
+        if res:
+            self.infile.set(res)
 
     def output_file(self):
         self.outfile.set(asksaveasfilename())
