@@ -28,10 +28,10 @@ class Config:
         file_opts = self.parse_configfile()
         if file_opts:
             for key in file_opts:
-                self.parameters[key] = key
+                self.parameters[key] = file_opts[key]
         cmdline_opts = self.parse_cmdline()
         for key in cmdline_opts:
-            self.parameters[key] = key
+            self.parameters[key] = cmdline_opts[key]
 
     def parse_cmdline(self):
         """Parse commandline and return arguments dict."""
@@ -46,7 +46,7 @@ class Config:
         parser.add_argument("-e", "--encoding", help="Encoding of input and output file.")
         parser.add_argument("-p", "--postfix", help="Optional output file postfix (can be used instead of providing full file name. "
                                                     "In such case, output file name will be input_file_name + postfix).")
-        return parser.parse_args()
+        return parser.parse_args().__dict__
 
     def parse_configfile(self):
         """Parse configuration file. Returns False if file cannot be read, else returns its contents."""

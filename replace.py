@@ -12,7 +12,7 @@ else:
     can_run_gui = True
 
 
-if __name__ == "__main":
+if __name__ == "__main__":
     params = main.Config()
     if len(sys.argv) > 1:
         params.create_config()
