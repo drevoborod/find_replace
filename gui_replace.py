@@ -36,9 +36,7 @@ class MainGui(tk.Tk):
         self.mainloop()
 
     def input_file(self):
-        res = askopenfilename()
-        if res:
-            self.infile.set(res)
+        self.infile.set(askopenfilename())
 
     def output_file(self):
         self.outfile.set(asksaveasfilename())
