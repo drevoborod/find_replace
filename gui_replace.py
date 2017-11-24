@@ -46,7 +46,5 @@ class MainGui(tk.Tk):
 
 
 if __name__ == "__main__":
-    import sys
-    message = "Sorry, this file is not for direct execution. Please use replace.py instead."
-    print(message)
-    sys.exc_info(message)
+    main.exit_error("Sorry, this file is not for direct execution. Please use replace.py instead.")
+
