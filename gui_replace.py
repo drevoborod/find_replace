@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import tkinter as tk
-from tkinter.filedialog import asksaveasfilename
-from tkinter.filedialog import askopenfilename
+from tkinter.filedialog import asksaveasfilename, askopenfilename
+from tkinter.messagebox import askyesno, showerror
 import main
 
 
@@ -10,6 +10,7 @@ class MainGui(tk.Tk):
     def __init__(self, engine, **kwargs):
         super().__init__(**kwargs)
         self.engine = engine
+        self.saved = False      # Indicates if this output file name has been already in use.
         self.title("Find and replace")
         self.search_pattern = tk.StringVar(value=self.engine.params["find"] if "find" in self.engine.params else "")
         self.replace_pattern = tk.StringVar(value=self.engine.params["replace"] if "replace" in self.engine.params else "")
@@ -36,13 +37,51 @@ class MainGui(tk.Tk):
         self.mainloop()
 
     def input_file(self):
-        self.infile.set(askopenfilename())
+        res = askopenfilename().strip()
+        if res:
+            self.infile.set(res)
 
     def output_file(self):
-        self.outfile.set(asksaveasfilename())
+        res = asksaveasfilename().strip()
+        if res:
+            self.outfile.set(res)
+
+    def set_params(self):
+        infile = self.infile.get().strip()
+        if infile:
+            self.engine.params["input"] = infile
+        else:
+            showerror("No file to parse", "Please enter file name to parse!")
+            return False
+        search = self.search_pattern.get()
+        if search:
+            self.engine.params["find"] = search
+        else:
+            showerror("Nothing to search", "Please enter search pattern!")
+            return False
+        replace = self.replace_pattern.get()
+        if replace:
+            self.engine.params["replace"] = replace
+        else:
+            showerror("No replace pattern", "Please enter replace expression!")
+            return False
+        self.engine.params["delimiter"] = self.delimiter.get()
+        self.engine.params["number"] = self.blocksize.get()
+        outfile = self.outfile.get().strip()
+        if outfile:
+            self.engine.params["output"] = outfile
+        return True
 
     def execute(self):
-        pass
+        if self.set_params():
+            if self.saved:
+                if askyesno("Export file already used", "Warning! This export file name was already in use.\n"
+                                                        "Do you want to select new export file name?"):
+                    self.output_file()
+            try:
+                self.engine.parse_file()
+            except main.ParserError as err:
+                showerror("Unable to open file", err)
 
 
 if __name__ == "__main__":

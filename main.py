@@ -88,9 +88,18 @@ class Engine:
     def close(self):
         self.outfile.close()
 
-    def parse(self):
+    def parse_file(self):
+        try:
+            data = open(self.params["input"], encoding=self.params["encoding"])
+        except (IOError, FileNotFoundError):
+            raise ParserError("Cannot open file to parse.")
+        self.parse(data)
+
+    def parse(self, data):
+        """Data can be either file object or string."""
         self.create_outfile()
-        data = open(self.params["input"], encoding=self.params["encoding"])
+        if type(data) is str:
+            data = [x + "\n" for x in data.split("\n")]
         result = []
         for string in data:
             res = string.rstrip().split(self.params["find"])
