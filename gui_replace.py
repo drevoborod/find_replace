@@ -2,7 +2,7 @@
 
 import tkinter as tk
 from tkinter.filedialog import asksaveasfilename, askopenfilename
-from tkinter.messagebox import askyesno, showerror
+from tkinter.messagebox import askyesno, showerror, showinfo
 import main
 
 
@@ -14,10 +14,10 @@ class MainGui(tk.Tk):
         self.title("Find and replace")
         self.search_pattern = tk.StringVar(value=self.engine.params["find"] if "find" in self.engine.params else "")
         self.replace_pattern = tk.StringVar(value=self.engine.params["replace"] if "replace" in self.engine.params else "")
-        self.delimiter = tk.StringVar(self.engine.params["delimiter"])
-        self.blocksize = tk.IntVar(self.engine.params["number"])
-        self.infile = tk.StringVar()
-        self.outfile = tk.StringVar()
+        self.delimiter = tk.StringVar(value=self.engine.params["delimiter"])
+        self.blocksize = tk.StringVar(value=self.engine.params["number"])
+        self.infile = tk.StringVar(value=self.engine.params["input"] if "input" in self.engine.params else "")
+        self.outfile = tk.StringVar(value=self.engine.params["output"] if "output" in self.engine.params else "")
         tk.Button(text="Input file...", command=self.input_file, width=15).grid(row=0, column=0, sticky="w", padx=5, pady=5)
         tk.Entry(textvariable=self.infile, width=100).grid(row=0, column=1, padx=5, columnspan=4, sticky="we")
         tk.Button(text="Output file...", command=self.output_file, width=15).grid(row=1, column=0, sticky="w", padx=5, pady=5)
@@ -29,7 +29,7 @@ class MainGui(tk.Tk):
         tk.Label(text="(\\n, \\t, \\r can be used)").grid(row=3, column=0, columnspan=3, sticky = "ewn")
         tk.Label(text="Separator:").grid(row=4, column=0, sticky="es", pady=5, padx=5)
         tk.Label(text="Block size:").grid(row=4, column=2, sticky="es", pady=5, padx=5)
-        tk.Entry(textvariable=self.delimiter, width=20).grid(row=4, column=1, sticky="ws", pady=5, padx=5)
+        tk.Entry(textvariable=self.delimiter, width=50).grid(row=4, column=1, sticky="ws", pady=5, padx=5)
         tk.Entry(textvariable=self.blocksize, width=5).grid(row=4, column=3, sticky="ws", pady=5, padx=5)
         tk.Frame(height=15).grid(row=5, pady=5)
         tk.Button(text="Execute", command=self.execute, width=8).grid(row=6, column=0, sticky="sw", padx=5, pady=5)
@@ -53,6 +53,7 @@ class MainGui(tk.Tk):
         res = asksaveasfilename().strip()
         if res:
             self.outfile.set(res)
+            self.saved = False
 
     def set_params(self):
         infile = self.infile.get().strip()
@@ -78,6 +79,14 @@ class MainGui(tk.Tk):
         outfile = self.outfile.get().strip()
         if outfile:
             self.engine.params["output"] = outfile
+        else:
+            try:
+                self.engine.create_outfile()
+            except main.ParserError as err:
+                showerror("Unable to create output file", err)
+                return False
+            else:
+                self.outfile.set(self.engine.params["output"])
         return True
 
     def execute(self):
@@ -86,10 +95,17 @@ class MainGui(tk.Tk):
                 if askyesno("Export file already used", "Warning! This export file name was already in use.\n"
                                                         "Do you want to select new export file name?"):
                     self.output_file()
+                    outfile = self.outfile.get().strip()
+                    if outfile:
+                        self.engine.params["output"] = outfile
             try:
+                self.engine.create_outfile()
                 self.engine.parse_file()
             except main.ParserError as err:
                 showerror("Unable to open file", err)
+            else:
+                self.saved = True
+                showinfo("File created", "File '{}' successfully created.".format(self.outfile.get()))
 
 
 if __name__ == "__main__":

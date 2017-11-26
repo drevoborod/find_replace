@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+import os
 import argparse
 import configparser
 
@@ -8,7 +9,7 @@ import configparser
 DEFAULTS = {
     "config": "config.cfg",
     "postfix": "_result",
-    "delimiter": "  #################  ",
+    "delimiter": " ##### ",
     "encoding": "utf-8",
     "number": 0
 }
@@ -25,16 +26,24 @@ class Config:
             exit_error("\nNeed python interpreter version not less than 3.5.\n"\
                         "Your version is {}.".format('.'.join(map(str, sys.version_info[:3]))))
         self.parameters = DEFAULTS.copy()
+        self.params_exist = False
 
     def create_config(self):
         """Create configuration dictionary using parameters from defaults, command line and config file."""
+        cmdline_opts = self.parse_cmdline()
+        for key in cmdline_opts:
+            if cmdline_opts[key]:
+                self.parameters[key] = cmdline_opts[key]
+                if key != "config":
+                    self.params_exist = True
         file_opts = self.parse_configfile()
         if file_opts:
             for key in file_opts:
-                self.parameters[key] = file_opts[key]
-        cmdline_opts = self.parse_cmdline()
-        for key in cmdline_opts:
-            self.parameters[key] = cmdline_opts[key]
+                try:
+                    if not cmdline_opts[key]:
+                        self.parameters[key] = file_opts[key]
+                except KeyError:
+                    pass
 
     def parse_cmdline(self):
         """Parse commandline and return arguments dict."""
@@ -55,11 +64,17 @@ class Config:
         """Parse configuration file. Returns False if file cannot be read, else returns its contents."""
         config = configparser.ConfigParser()
         try:
-            config.read(self.parameters['config'])
+            configstring = self.add_section_to_config(self.parameters['config'])
         except (IOError, FileNotFoundError):
             return False
         else:
-            return dict(config.items())
+            config.read_string(configstring)
+            return dict(config.items(section='DEFAULT'))
+
+    def add_section_to_config(self, filename):
+        with open(filename, 'r', encoding=self.parameters["encoding"]) as f:
+            config_string = '[DEFAULT]\n' + f.read()
+        return config_string
 
 
 class Engine:
@@ -81,12 +96,8 @@ class Engine:
             self.outfile = open(filename, 'w', encoding=self.params['encoding'])
         except IOError:
             raise ParserError("Unable to create output file.")
-
-    def write(self, data):
-        self.outfile.write(data + self.delimiter)
-
-    def close(self):
-        self.outfile.close()
+        else:
+            self.params['output'] = filename
 
     def parse_file(self):
         try:
@@ -95,23 +106,43 @@ class Engine:
             raise ParserError("Cannot open file to parse.")
         self.parse(data)
 
+    def escape_replacer(self):
+        for item in ["find", "replace", "delimiter"]:
+            if "\\r" in self.params[item]:
+                self.params[item] = self.params[item].replace("\\r", "\r")
+            if "\\n" in self.params[item]:
+                self.params[item] = self.params[item].replace("\\n", "\n")
+            if "\\t" in self.params[item]:
+                self.params[item] = self.params[item].replace("\\t", "\t")
+
     def parse(self, data):
         """Data can be either file object or string."""
-        self.create_outfile()
+        if not hasattr(self, "outfile"):
+            raise ParserError("Output file is not defined.")
+        elif self.outfile.closed:
+            raise ParserError("Trying to write to already closed output file.")
         if type(data) is str:
-            data = [x + "\n" for x in data.split("\n")]
+            data = [data]
+        if self.params["number"]:
+            try:
+                number = int(self.params["number"])
+            except ValueError:
+                pass
+        self.escape_replacer()
         result = []
         for string in data:
-            res = string.rstrip().split(self.params["find"])
-            result += res
-            if self.params["number"]:
-                while len(result) >= self.params["number"]:
-                    self.outfile.write(self.params["replace"].join(result[:self.params["number"]]))
-                    result = result[self.params["number"]:]
+            parsed_string = string.split(self.params["find"])
+            if "number" in locals():
+                result += parsed_string
+                res = result[:]
+                while len(res) >= number:
+                    self.outfile.write(self.params["replace"].join(res[:number]) + self.params["delimiter"])
+                    res = res[number:]
+                result = res[:]
             else:
-                self.outfile.write(self.params["replace"].join(result))
+                self.outfile.write(self.params["replace"].join(parsed_string))
         self.outfile.write(self.params["replace"].join(result))
-        self.close()
+        self.outfile.close()
 
 
 def exit_error(message):

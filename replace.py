@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import sys
 import main
 
 
@@ -16,14 +15,17 @@ if __name__ == "__main__":
     params = main.Config()
     params.create_config()
     engine = main.Engine(params.parameters)
-    if len(sys.argv) > 1:
+    if params.params_exist:
         for p in main.REQUIRED:
             if p not in params.parameters:
                 main.exit_error("Required parameter is missing: '{}'.".format(p))
         try:
-            engine.parse()
+            engine.create_outfile()
+            engine.parse_file()
         except main.ParserError as err:
             main.exit_error(err)
+        else:
+            print("File '{}' successfully created.".format(engine.params["output"]))
     else:
         if can_run_gui:
             import gui_replace
