@@ -80,6 +80,10 @@ class Config:
 class Engine:
     def __init__(self, params):
         self.params = params
+        self.number = 0
+        self.block_counter = 0
+        self.delimiter_added = False
+        self.write_length = 10
 
     def create_outfile(self, filename=None):
         """Create file where to write to. Need to be executed firstly!"""
@@ -115,33 +119,46 @@ class Engine:
             if "\\t" in self.params[item]:
                 self.params[item] = self.params[item].replace("\\t", "\t")
 
+    def add_sep(self, iterable, result=None):
+        if not result:
+            result = []
+        result.append(iterable[0])
+        self.delimiter_added = False
+        self.block_counter += 1
+        if 0 < self.number == self.block_counter:
+            result.append(self.params["delimiter"])
+            self.block_counter = 0
+            self.delimiter_added = True
+        iterable = iterable[1:]
+        if iterable:
+            if not self.delimiter_added:
+                result.append(self.params["replace"])
+            self.add_sep(iterable, result)
+        else:
+            return result
+        return result
+
     def parse(self, data):
         """Data can be either file object or string."""
         if not hasattr(self, "outfile"):
             raise ParserError("Output file is not defined.")
         elif self.outfile.closed:
             raise ParserError("Trying to write to already closed output file.")
+        self.escape_replacer()
+        self.block_counter = 0
         if type(data) is str:
             data = [data]
         if self.params["number"]:
             try:
-                number = int(self.params["number"])
+                self.number = int(self.params["number"])
             except ValueError:
-                pass
-        self.escape_replacer()
-        result = []
+                self.number = 0
         for string in data:
-            parsed_string = string.split(self.params["find"])
-            if "number" in locals():
-                result += parsed_string
-                res = result[:]
-                while len(res) >= number:
-                    self.outfile.write(self.params["replace"].join(res[:number]) + self.params["delimiter"])
-                    res = res[number:]
-                result = res[:]
+            if self.params["find"] in string:
+                parsed = self.add_sep(string.split(self.params["find"]))
+                self.outfile.write("".join(parsed))
             else:
-                self.outfile.write(self.params["replace"].join(parsed_string))
-        self.outfile.write(self.params["replace"].join(result))
+                self.outfile.write(string)
         self.outfile.close()
 
 
