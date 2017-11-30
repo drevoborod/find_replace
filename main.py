@@ -122,6 +122,8 @@ class Engine:
     def add_sep(self, iterable, result=None):
         if not result:
             result = []
+        if len(iterable) == 1 and iterable[0] == '':
+            return result
         result.append(iterable[0])
         self.delimiter_added = False
         self.block_counter += 1
