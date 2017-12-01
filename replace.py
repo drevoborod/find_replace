@@ -15,7 +15,7 @@ if __name__ == "__main__":
     params = main.Config()
     params.create_config()
     engine = main.Engine(params.parameters)
-    if params.params_exist:
+    if "cli" in params.parameters:
         for p in main.REQUIRED:
             if p not in params.parameters:
                 main.exit_error("Required parameter is missing: '{}'.".format(p))

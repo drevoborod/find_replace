@@ -26,7 +26,6 @@ class Config:
             exit_error("\nNeed python interpreter version not less than 3.5.\n"\
                         "Your version is {}.".format('.'.join(map(str, sys.version_info[:3]))))
         self.parameters = DEFAULTS.copy()
-        self.params_exist = False
 
     def create_config(self):
         """Create configuration dictionary using parameters from defaults, command line and config file."""
@@ -34,8 +33,6 @@ class Config:
         for key in cmdline_opts:
             if cmdline_opts[key]:
                 self.parameters[key] = cmdline_opts[key]
-                if key != "config":
-                    self.params_exist = True
         file_opts = self.parse_configfile()
         if file_opts:
             for key in file_opts:
@@ -58,6 +55,7 @@ class Config:
         parser.add_argument("-e", "--encoding", help="Encoding of input and output file.")
         parser.add_argument("-p", "--postfix", help="Optional output file postfix (can be used instead of providing full file name. "
                                                     "In such case, output file name will be input_file_name + postfix).")
+        parser.add_argument("--cli", help="Enable command line interface mode.", action="store_true")
         return parser.parse_args().__dict__
 
     def parse_configfile(self):
@@ -69,7 +67,13 @@ class Config:
             return False
         else:
             config.read_string(configstring)
-            return dict(config.items(section='DEFAULT'))
+            res = dict(config.items(section='DEFAULT'))
+            for key in res:
+                if res[key].startswith('"') and res[key].endswith('"'):
+                    res[key] = res[key].strip('"')
+                elif res[key].startswith("'") and res[key].endswith("'"):
+                    res[key] = res[key].strip("'")
+            return res
 
     def add_section_to_config(self, filename):
         with open(filename, 'r', encoding=self.parameters["encoding"]) as f:
