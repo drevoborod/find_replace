@@ -72,8 +72,7 @@ class MainGui(tk.Tk):
         if replace:
             self.engine.params["replace"] = replace
         else:
-            showerror("No replace pattern", "Please enter replace expression!")
-            return False
+            self.engine.params["replace"] = ""
         self.engine.params["delimiter"] = self.delimiter.get()
         self.engine.params["number"] = self.blocksize.get()
         outfile = self.outfile.get().strip()
